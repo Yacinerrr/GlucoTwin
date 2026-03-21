@@ -1,94 +1,109 @@
+import { useMemo, useState } from "react";
 import {
-  Activity,
-  AlertTriangle,
-  ChevronRight,
-  Flame,
-  Goal,
-  ShieldCheck,
-  UtensilsCrossed,
-} from "lucide-react";
+  MetabolicChart,
+  type MetabolicPoint,
+} from "../../components/charts/MetabolicChart";
+import { RiskAnalysisChart } from "../../components/charts/RiskAnalysisChart";
+import { ActionHub } from "../../components/dashboard/ActionHub";
+import { KpiSummaryCards } from "../../components/dashboard/KpiSummaryCards";
+import { PatientInsights } from "../../components/dashboard/PatientInsights";
 
-function ProjectionCurve() {
-  return (
-    <svg
-      viewBox="0 0 900 200"
-      className="h-[200px] w-full"
-      role="img"
-      aria-label="Glucose projection curve">
-      <defs>
-        <linearGradient id="lineGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#2a7de1" />
-          <stop offset="100%" stopColor="#28b06f" />
-        </linearGradient>
-      </defs>
-
-      <line x1="0" y1="22" x2="900" y2="22" stroke="#ebf0f6" strokeWidth="2" />
-      <line
-        x1="0"
-        y1="178"
-        x2="900"
-        y2="178"
-        stroke="#ebf0f6"
-        strokeWidth="2"
-      />
-
-      <path
-        d="M20,145 C120,136 130,70 220,86 C298,101 302,118 390,104"
-        fill="none"
-        stroke="url(#lineGlow)"
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-      <circle
-        cx="390"
-        cy="104"
-        r="6"
-        fill="#2b7edc"
-        stroke="#fff"
-        strokeWidth="3"
-      />
-      <path
-        d="M390,104 C480,90 520,158 600,146 C675,132 700,64 785,90"
-        fill="none"
-        stroke="#69a9eb"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray="8 8"
-      />
-      <text x="788" y="78" fill="#6fb98f" fontSize="11" fontWeight="800">
-        OPTIMAL RANGE
-      </text>
-    </svg>
-  );
+interface PatientDashboard {
+  id: string;
+  name: string;
+  age: number;
+  condition: string;
+  currentGlucose: number;
+  glucoseTrendText: string;
+  riskWindowText: string;
+  riskPercent: number;
+  warningInsight: string;
+  successInsight: string;
+  metabolicData: MetabolicPoint[];
 }
 
-function KpiCard({
-  title,
-  value,
-  hint,
-  accent,
-}: {
-  title: string;
-  value: string;
-  hint: string;
-  accent: string;
-}) {
-  return (
-    <article
-      className="rounded-2xl border border-slate-200 bg-white p-3.5"
-      style={{ borderTop: `4px solid ${accent}` }}>
-      <p className="m-0 text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">
-        {title}
-      </p>
-      <p className="mb-1 mt-3 text-[2rem] font-extrabold leading-none text-slate-700">
-        {value}
-      </p>
-      <p className="m-0 text-xs font-semibold text-slate-500">{hint}</p>
-    </article>
-  );
-}
+const patients: PatientDashboard[] = [
+  {
+    id: "p-001",
+    name: "John Doe",
+    age: 34,
+    condition: "Type 1 Diabetes",
+    currentGlucose: 112,
+    glucoseTrendText: "Stable in 6m",
+    riskWindowText: "2h 15m",
+    riskPercent: 65,
+    warningInsight:
+      "Your peak risk appears at 13:20. Reduce carbs by 10g at lunch to flatten spikes.",
+    successInsight:
+      "Safe-range time increased by 8% this week compared to your monthly baseline.",
+    metabolicData: [
+      { time: "11:00", baseline: 122, projected: 118 },
+      { time: "12:00", baseline: 130, projected: 124 },
+      { time: "13:00", baseline: 144, projected: 133 },
+      { time: "14:00", baseline: 128, projected: 137 },
+      { time: "15:00", baseline: 116, projected: 129 },
+      { time: "16:00", baseline: 110, projected: 119 },
+      { time: "17:00", baseline: 104, projected: 112 },
+    ],
+  },
+  {
+    id: "p-002",
+    name: "Amel Rahmani",
+    age: 29,
+    condition: "Gestational Diabetes",
+    currentGlucose: 138,
+    glucoseTrendText: "Rising slowly",
+    riskWindowText: "1h 40m",
+    riskPercent: 54,
+    warningInsight:
+      "Post-lunch rise is persistent. Split carbohydrate intake over two smaller meals.",
+    successInsight:
+      "No nocturnal hypo episodes were detected in the last 5 days.",
+    metabolicData: [
+      { time: "11:00", baseline: 118, projected: 124 },
+      { time: "12:00", baseline: 125, projected: 132 },
+      { time: "13:00", baseline: 139, projected: 142 },
+      { time: "14:00", baseline: 148, projected: 149 },
+      { time: "15:00", baseline: 135, projected: 143 },
+      { time: "16:00", baseline: 122, projected: 136 },
+      { time: "17:00", baseline: 116, projected: 129 },
+    ],
+  },
+  {
+    id: "p-003",
+    name: "Youssef Karim",
+    age: 41,
+    condition: "Type 2 Diabetes",
+    currentGlucose: 96,
+    glucoseTrendText: "Slight dip expected",
+    riskWindowText: "3h 05m",
+    riskPercent: 31,
+    warningInsight:
+      "Late-afternoon dip likely after activity. Keep a small carb snack nearby.",
+    successInsight:
+      "Average fasting glucose improved by 11 mg/dL over the last 14 days.",
+    metabolicData: [
+      { time: "11:00", baseline: 114, projected: 109 },
+      { time: "12:00", baseline: 108, projected: 103 },
+      { time: "13:00", baseline: 103, projected: 100 },
+      { time: "14:00", baseline: 99, projected: 97 },
+      { time: "15:00", baseline: 97, projected: 95 },
+      { time: "16:00", baseline: 98, projected: 94 },
+      { time: "17:00", baseline: 101, projected: 96 },
+    ],
+  },
+];
 
 export function DashboardPage() {
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
+    null,
+  );
+
+  const selectedPatient = useMemo(
+    () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
+    [selectedPatientId],
+  );
+
   return (
     <section className="grid gap-3.5">
       <header className="px-0.5 py-1">
@@ -96,103 +111,94 @@ export function DashboardPage() {
           Digital Twin Insights
         </p>
         <h1 className="mt-1 font-['Sora'] text-[1.75rem] font-bold tracking-tight text-slate-800">
-          Metabolic Projection
+          Patient Monitoring Dashboard
         </h1>
       </header>
 
-      <article className="rounded-2xl border border-slate-200 bg-white p-3.5">
-        <div className="flex justify-end gap-3.5 text-[11px] font-bold text-slate-400">
-          <span>Historical Baseline</span>
-          <span>Predicted Next 6h</span>
-        </div>
-        <ProjectionCurve />
-        <div className="flex justify-between text-[11px] font-bold text-slate-400">
-          <span>11:00</span>
-          <span>NOW</span>
-          <span>+6 PREDICTION</span>
-        </div>
-      </article>
-
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <KpiCard
-          title="Current Glucose"
-          value="112"
-          hint="Stable in 6m"
-          accent="#18a36b"
-        />
-        <article className="grid justify-items-center rounded-2xl border border-slate-200 border-t-4 border-t-amber-700 bg-white p-3.5">
-          <p className="m-0 text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">
-            Risk Analysis
+      <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-[280px_1fr]">
+        <aside className="rounded-2xl border border-slate-200 bg-white p-3.5">
+          <h2 className="m-0 font-['Sora'] text-base font-bold text-slate-800">
+            Patients
+          </h2>
+          <p className="mb-3 mt-1 text-sm text-slate-500">
+            Select a patient to display metabolic insights.
           </p>
-          <div className="relative my-3 grid h-24 w-24 place-items-center rounded-full bg-[conic-gradient(#996336_0_65%,#f0e2d5_65%_100%)]">
-            <div className="absolute inset-3 rounded-full bg-white" />
-            <span className="relative font-extrabold text-amber-900">65%</span>
-          </div>
-          <p className="m-0 text-xs font-semibold text-slate-500">
-            Hyperglycemia risk probability
-          </p>
-        </article>
-        <KpiCard
-          title="Window of Risk"
-          value="2h 15m"
-          hint="Active 12:30 - 14:45"
-          accent="#2f7fd6"
-        />
-      </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-3.5">
-        <h2 className="m-0 font-['Sora'] text-base font-bold">Action Hub</h2>
-        <p className="mb-3 mt-1 text-sm text-slate-500">
-          Log events to keep your digital twin accurate.
-        </p>
-        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
-          <button
-            type="button"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3.5 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200">
-            <UtensilsCrossed size={17} />
-            Add Meal
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3.5 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200">
-            <Activity size={17} />
-            Inject Insulin
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3.5 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200">
-            <Flame size={17} />
-            Log Activity
-          </button>
+          <div className="grid gap-2">
+            {patients.map((patient) => {
+              const isActive = selectedPatientId === patient.id;
+
+              return (
+                <button
+                  key={patient.id}
+                  type="button"
+                  onClick={() => setSelectedPatientId(patient.id)}
+                  className={[
+                    "rounded-xl border px-3 py-2.5 text-left transition",
+                    isActive
+                      ? "border-blue-300 bg-blue-50"
+                      : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100",
+                  ].join(" ")}>
+                  <p className="m-0 text-sm font-bold text-slate-800">
+                    {patient.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {patient.condition} · {patient.age}y
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        <div className="grid gap-3.5">
+          {!selectedPatient ? (
+            <div className="grid min-h-60 place-items-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
+              <div>
+                <h3 className="m-0 font-['Sora'] text-lg font-bold text-slate-700">
+                  No patient selected
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Choose one patient from the list to render charts and risk
+                  analysis.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
+                <p className="m-0 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                  Active patient
+                </p>
+                <h2 className="mt-1 font-['Sora'] text-xl font-bold text-slate-800">
+                  {selectedPatient.name}
+                </h2>
+                <p className="m-0 text-sm text-slate-500">
+                  {selectedPatient.condition}
+                </p>
+              </div>
+
+              <MetabolicChart data={selectedPatient.metabolicData} />
+
+              <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <KpiSummaryCards
+                  glucoseValue={selectedPatient.currentGlucose}
+                  glucoseTrendText={selectedPatient.glucoseTrendText}
+                  riskWindowText={selectedPatient.riskWindowText}
+                />
+                <RiskAnalysisChart risk={selectedPatient.riskPercent} />
+              </section>
+
+              <ActionHub />
+
+              <PatientInsights
+                warningInsight={selectedPatient.warningInsight}
+                successInsight={selectedPatient.successInsight}
+              />
+            </>
+          )}
         </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
-        <article className="grid grid-cols-[auto_1fr_auto] items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3">
-          <AlertTriangle size={18} />
-          <div>
-            <h3 className="mb-1 mt-0 text-sm font-bold">Evening dip insight</h3>
-            <p className="m-0 text-xs leading-relaxed text-amber-900/80">
-              Your peak risk appears at 13:20. Reduce carbs by 10g at lunch to
-              flatten spikes.
-            </p>
-          </div>
-          <ChevronRight size={18} />
-        </article>
-        <article className="grid grid-cols-[auto_1fr_auto] items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-          <ShieldCheck size={18} />
-          <div>
-            <h3 className="mb-1 mt-0 text-sm font-bold">
-              Stability achievement
-            </h3>
-            <p className="m-0 text-xs leading-relaxed text-emerald-900/70">
-              Safe-range time increased by 8% this week compared to your monthly
-              baseline.
-            </p>
-          </div>
-          <Goal size={18} />
-        </article>
-      </section>
+      </div>
     </section>
   );
 }
