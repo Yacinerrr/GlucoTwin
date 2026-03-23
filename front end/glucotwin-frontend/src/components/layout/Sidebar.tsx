@@ -11,8 +11,8 @@ import { NavLink } from "react-router-dom";
 const navItems = [
   { to: "/dashboard", label: "Home", icon: Home },
   { to: "/food", label: "Food Log", icon: UtensilsCrossed },
-  { to: "/insulin", label: "Twin Insights", icon: Activity },
-  { to: "/insights", label: "Ramadan Mode", icon: Waves },
+  { to: "/insights", label: "Twin Insights", icon: Activity },
+  { to: "/ramadan", label: "Ramadan Mode", icon: Waves },
   { to: "/doctor", label: "Profile", icon: Stethoscope },
 ];
 
