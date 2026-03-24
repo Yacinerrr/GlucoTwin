@@ -6,6 +6,7 @@ import { DoctorPage } from "./pages/doctor/DoctorPage";
 import { FoodPage } from "./pages/food/FoodPage";
 import { TwinInsightsPage } from "./pages/insights/twin_insights";
 import { InsulinPage } from "./pages/insulin/InsulinPage";
+import { RamadanPage } from "./pages/ramadan/RamadanPage";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/insights" element={<InsightsPage />} />
         <Route path="/doctor" element={<DoctorPage />} /> */}
         <Route path="/insights" element={<TwinInsightsPage />} />
+        <Route path="/ramadan" element={<RamadanPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
