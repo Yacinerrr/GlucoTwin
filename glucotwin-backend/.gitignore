@@ -3,10 +3,13 @@ venv
 # =========================
 # Python basics
 # =========================
+
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.pyc
+
 
 # =========================
 # Virtual environment
