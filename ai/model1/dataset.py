@@ -17,29 +17,34 @@ def create_sequences(
     forecast_horizon: int = FORECAST_HORIZON,
 ):
     """
-    Convert a processed dataframe into supervised learning sequences.
-
-    X shape: [num_samples, input_window, num_features]
-    y shape: [num_samples, forecast_horizon]
+    Convert processed dataframe into supervised sequences.
+    If patient_id exists, sequences are built separately per patient.
     """
-    feature_array = df[FEATURE_COLUMNS].values.astype(np.float32)
-    target_array = df[TARGET_COLUMN].values.astype(np.float32)
-
     X, y = [], []
 
-    total_length = len(df)
+    if "patient_id" in df.columns:
+        grouped = df.groupby("patient_id")
+    else:
+        grouped = [(None, df)]
 
-    for i in range(total_length - input_window - forecast_horizon + 1):
-        x_seq = feature_array[i : i + input_window]
-        y_seq = target_array[i + input_window : i + input_window + forecast_horizon]
+    for _, group_df in grouped:
+        group_df = group_df.sort_values("timestamp").reset_index(drop=True)
 
-        X.append(x_seq)
-        y.append(y_seq)
+        feature_array = group_df[FEATURE_COLUMNS].values.astype(np.float32)
+        target_array = group_df[TARGET_COLUMN].values.astype(np.float32)
+
+        total_length = len(group_df)
+
+        for i in range(total_length - input_window - forecast_horizon + 1):
+            x_seq = feature_array[i:i + input_window]
+            y_seq = target_array[i + input_window:i + input_window + forecast_horizon]
+
+            X.append(x_seq)
+            y.append(y_seq)
 
     if len(X) == 0:
         raise ValueError(
-            "Not enough data to create sequences. "
-            f"Need at least {input_window + forecast_horizon} rows, got {total_length}."
+            "Not enough data to create sequences."
         )
 
     X = np.array(X, dtype=np.float32)
