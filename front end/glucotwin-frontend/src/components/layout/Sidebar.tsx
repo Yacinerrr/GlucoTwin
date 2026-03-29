@@ -2,21 +2,33 @@ import {
   Activity,
   Home,
   ShieldAlert,
-  Stethoscope,
+  User,
   UtensilsCrossed,
   Waves,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../context/Authcontext";
 
 const navItems = [
   { to: "/dashboard", label: "Home", icon: Home },
   { to: "/food", label: "Food Log", icon: UtensilsCrossed },
   { to: "/insights", label: "Twin Insights", icon: Activity },
   { to: "/ramadan", label: "Ramadan Mode", icon: Waves },
-  { to: "/doctor", label: "Profile", icon: Stethoscope },
+  { to: "/profile", label: "Profile", icon: User },
 ];
 
 export function Sidebar() {
+  const { user, logout } = useAuth();
+  
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
   return (
     <aside className="flex flex-col justify-between gap-5 border-b border-slate-200 bg-gradient-to-b from-white to-slate-100 p-4 lg:border-b-0 lg:border-r lg:p-5">
       <div>
@@ -50,17 +62,20 @@ export function Sidebar() {
 
       <div className="grid grid-cols-[auto_1fr] items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5">
         <div className="grid h-[30px] w-[30px] place-items-center rounded-full bg-gradient-to-br from-blue-600 to-cyan-400 text-[11px] font-bold text-white">
-          JD
+          {getInitials(user?.full_name)}
         </div>
         <div>
-          <strong className="text-[13px]">John Doe</strong>
-          <p className="m-0 text-[11px] text-slate-500">System Profile</p>
+          <strong className="text-[13px]">{user?.full_name || "User"}</strong>
+          <p className="m-0 text-[11px] text-slate-500 capitalize">
+            {user?.role || "Patient"}
+          </p>
         </div>
         <button
           type="button"
-          className="col-span-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-700 px-2.5 py-2 text-xs font-semibold text-white transition hover:bg-blue-800">
+          onClick={logout}
+          className="col-span-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-700 px-2.5 py-2 text-xs font-semibold text-white transition hover:bg-red-800">
           <ShieldAlert size={14} />
-          Sync Device
+          Logout
         </button>
       </div>
     </aside>

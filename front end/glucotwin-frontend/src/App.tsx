@@ -3,6 +3,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import AuthScreen from "./pages/authentification/authentificationpage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
+import { ProfilePage } from "./pages/profile/ProfilePage";
 //import { DoctorPage } from "./pages/doctor/DoctorPage";
 //import { FoodPage } from "./pages/food/FoodPage";
 import { TwinInsightsPage } from "./pages/insights/twin_insights";
@@ -21,6 +22,14 @@ function App() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />
