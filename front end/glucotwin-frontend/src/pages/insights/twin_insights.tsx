@@ -5,7 +5,6 @@ import {
   Sparkles,
   Syringe,
   TrendingUp,
-  Clock,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -19,6 +18,8 @@ import {
   YAxis,
 } from "recharts";
 import { glucoseAPI, insulinAPI } from "../../services/api";
+import { useAuth } from "../../context/Authcontext";
+import { useCurrentPatient } from "../../context/CurrentPatientContext";
 
 type WeeklyScorePoint = {
   key: string;
@@ -517,48 +518,49 @@ function ProposedInsulinCard() {
   );
 }
 
-interface InsulinDoseRecord {
-  id: number;
-  patient_id: number;
-  dose_amount: number;
-  dose_type: string;
-  current_glucose: number | null;
-  carbs_intake: number | null;
-  is_recommended: boolean;
-  recorded_at: string;
-  created_at: string;
-  notes: string | null;
+interface InsulinDailySummaryRecord {
+  date: string;
+  total_dose: number;
+  count: number;
+  dose_types: Record<string, number>;
 }
 
 function InsulinHistoryCard() {
-  const [history, setHistory] = useState<
-    Array<{
-      date: string;
-      total_dose: number;
-      count: number;
-      dose_types: Record<string, number>;
-    }>
-  >([]);
+  const { user } = useAuth();
+  const { currentPatient } = useCurrentPatient();
+  const [history, setHistory] = useState<InsulinDailySummaryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await insulinAPI.getDailySummary(7);
-      setHistory(data);
+
+      // For doctors: load current patient's history
+      if (user?.role === "doctor") {
+        if (!currentPatient) {
+          setHistory([]);
+          return;
+        }
+        const data = await insulinAPI.getPatientDailySummary(currentPatient.id, 7);
+        setHistory(data);
+      } else {
+        // For patients: load own history
+        const data = await insulinAPI.getDailySummary(7);
+        setHistory(data);
+      }
     } catch (err) {
       console.error("Error fetching insulin history:", err);
       setError("Failed to load insulin history");
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.role, currentPatient]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString + "T00:00:00");
@@ -572,6 +574,32 @@ function InsulinHistoryCard() {
     const date = new Date(dateString + "T00:00:00");
     return date.toLocaleDateString("en-US", { weekday: "short" });
   };
+
+  // For doctors: show message if no patient selected
+  if (user?.role === "doctor" && !currentPatient) {
+    return (
+      <article className="rounded-2xl border border-slate-200 bg-white p-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="m-0 font-['Sora'] text-base font-bold text-slate-800">
+              Insulin History
+            </h2>
+            <p className="m-0 text-xs text-slate-500">Last 7 days</p>
+          </div>
+          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+            7D
+          </span>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+          <Syringe size={24} className="mx-auto text-slate-400" />
+          <p className="mt-2 text-xs text-slate-600">
+            Select a patient to view their insulin history
+          </p>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-3.5">

@@ -8,6 +8,7 @@ import { ActionHub } from "../../components/dashboard/ActionHub";
 import { KpiSummaryCards } from "../../components/dashboard/KpiSummaryCards";
 import { PatientInsights } from "../../components/dashboard/PatientInsights";
 import { useAuth } from "../../context/Authcontext";
+import { useCurrentPatient } from "../../context/CurrentPatientContext";
 import { doctorAPI, patientAPI } from "../../services/api";
 
 interface PatientDashboard {
@@ -24,86 +25,12 @@ interface PatientDashboard {
   metabolicData: MetabolicPoint[];
 }
 
-const patients: PatientDashboard[] = [
-  {
-    id: "p-001",
-    name: "John Doe",
-    age: 34,
-    condition: "Type 1 Diabetes",
-    currentGlucose: 112,
-    glucoseTrendText: "Stable in 6m",
-    riskWindowText: "2h 15m",
-    riskPercent: 65,
-    warningInsight:
-      "Your peak risk appears at 13:20. Reduce carbs by 10g at lunch to flatten spikes.",
-    successInsight:
-      "Safe-range time increased by 8% this week compared to your monthly baseline.",
-    metabolicData: [
-      { time: "11:00", baseline: 122, projected: 118 },
-      { time: "12:00", baseline: 130, projected: 124 },
-      { time: "13:00", baseline: 144, projected: 133 },
-      { time: "14:00", baseline: 128, projected: 137 },
-      { time: "15:00", baseline: 116, projected: 129 },
-      { time: "16:00", baseline: 110, projected: 119 },
-      { time: "17:00", baseline: 104, projected: 112 },
-    ],
-  },
-  {
-    id: "p-002",
-    name: "Amel Rahmani",
-    age: 29,
-    condition: "Gestational Diabetes",
-    currentGlucose: 138,
-    glucoseTrendText: "Rising slowly",
-    riskWindowText: "1h 40m",
-    riskPercent: 54,
-    warningInsight:
-      "Post-lunch rise is persistent. Split carbohydrate intake over two smaller meals.",
-    successInsight:
-      "No nocturnal hypo episodes were detected in the last 5 days.",
-    metabolicData: [
-      { time: "11:00", baseline: 118, projected: 124 },
-      { time: "12:00", baseline: 125, projected: 132 },
-      { time: "13:00", baseline: 139, projected: 142 },
-      { time: "14:00", baseline: 148, projected: 149 },
-      { time: "15:00", baseline: 135, projected: 143 },
-      { time: "16:00", baseline: 122, projected: 136 },
-      { time: "17:00", baseline: 116, projected: 129 },
-    ],
-  },
-  {
-    id: "p-003",
-    name: "Youssef Karim",
-    age: 41,
-    condition: "Type 2 Diabetes",
-    currentGlucose: 96,
-    glucoseTrendText: "Slight dip expected",
-    riskWindowText: "3h 05m",
-    riskPercent: 31,
-    warningInsight:
-      "Late-afternoon dip likely after activity. Keep a small carb snack nearby.",
-    successInsight:
-      "Average fasting glucose improved by 11 mg/dL over the last 14 days.",
-    metabolicData: [
-      { time: "11:00", baseline: 114, projected: 109 },
-      { time: "12:00", baseline: 108, projected: 103 },
-      { time: "13:00", baseline: 103, projected: 100 },
-      { time: "14:00", baseline: 99, projected: 97 },
-      { time: "15:00", baseline: 97, projected: 95 },
-      { time: "16:00", baseline: 98, projected: 94 },
-      { time: "17:00", baseline: 101, projected: 96 },
-    ],
-  },
-];
-
 export function DashboardPage() {
   const { user } = useAuth();
+  const { currentPatient, setCurrentPatient, patients } = useCurrentPatient();
   const [loadedPatients, setLoadedPatients] = useState<PatientDashboard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
-    null,
-  );
 
   // Load patients based on user role
   useEffect(() => {
@@ -117,12 +44,12 @@ export function DashboardPage() {
           // Doctor: fetch their patients
           const backendPatients = await doctorAPI.getPatients();
           const formattedPatients: PatientDashboard[] = backendPatients.map(
-            (p: any) => ({
+            (p: { id: number; full_name: string; age: number; diabetes_type: string }) => ({
               id: String(p.id),
               name: p.full_name,
               age: p.age || 0,
               condition: p.diabetes_type || "Diabetes",
-              currentGlucose: 120, // Placeholder - would need glucose endpoint
+              currentGlucose: 120,
               glucoseTrendText: "Data loading...",
               riskWindowText: "Data loading...",
               riskPercent: 0,
@@ -132,12 +59,9 @@ export function DashboardPage() {
             }),
           );
           setLoadedPatients(formattedPatients);
-          if (formattedPatients.length > 0) {
-            setSelectedPatientId(formattedPatients[0].id);
-          }
         } else if (user.role === "patient") {
           // Patient: show their own data
-          const patientData = await patientAPI.getProfile();
+          await patientAPI.getProfile();
           const selfPatient: PatientDashboard = {
             id: String(user.id),
             name: user.full_name,
@@ -160,13 +84,11 @@ export function DashboardPage() {
             ],
           };
           setLoadedPatients([selfPatient]);
-          setSelectedPatientId(String(user.id));
         }
-      } catch (err: any) {
-        console.error("Failed to load patients:", err);
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err.message : "Failed to load patient data";
+        console.error("Failed to load patients:", error);
         setError("Failed to load patient data");
-        // Fallback to hardcoded patients
-        setLoadedPatients(patients);
       } finally {
         setIsLoading(false);
       }
@@ -177,9 +99,9 @@ export function DashboardPage() {
 
   const selectedPatient = useMemo(
     () =>
-      loadedPatients.find((patient) => patient.id === selectedPatientId) ??
+      loadedPatients.find((patient) => patient.id === String(currentPatient?.id)) ??
       null,
-    [selectedPatientId, loadedPatients],
+    [currentPatient?.id, loadedPatients],
   );
 
   return (
@@ -220,13 +142,18 @@ export function DashboardPage() {
 
           <div className="grid gap-2">
             {loadedPatients.map((patient) => {
-              const isActive = selectedPatientId === patient.id;
+              const isActive = currentPatient?.id === parseInt(patient.id);
 
               return (
                 <button
                   key={patient.id}
                   type="button"
-                  onClick={() => setSelectedPatientId(patient.id)}
+                  onClick={() => {
+                    const patientInfo = patients.find(p => p.id === parseInt(patient.id));
+                    if (patientInfo) {
+                      setCurrentPatient(patientInfo);
+                    }
+                  }}
                   className={[
                     "rounded-xl border px-3 py-2.5 text-left transition",
                     isActive

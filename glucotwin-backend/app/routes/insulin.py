@@ -242,6 +242,79 @@ def get_daily_insulin_summary(
     return result
 
 
+@router.get("/daily-summary/{patient_id}")
+def get_patient_daily_insulin_summary(
+    patient_id: int,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    days: int = 7,
+):
+    """
+    Get daily insulin dose summary for a specific patient (doctor access only)
+    """
+    from datetime import timedelta
+
+    # Verify current user is a doctor with access to this patient
+    if not isinstance(current_user, Doctor):
+        raise HTTPException(status_code=403, detail="Only doctors can view patient summary")
+    
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient or patient.doctor_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to view this patient's summary"
+        )
+
+    # Calculate cutoff
+    cutoff_date = datetime.utcnow() - timedelta(days=days + 1)
+
+    # Query doses and group by date
+    doses = (
+        db.query(InsulinDose)
+        .filter(
+            InsulinDose.patient_id == patient_id,
+            InsulinDose.recorded_at >= cutoff_date,
+        )
+        .order_by(InsulinDose.recorded_at)
+        .all()
+    )
+
+    # Group doses by day
+    daily_summary = {}
+    for dose in doses:
+        # Convert to date string (YYYY-MM-DD)
+        if isinstance(dose.recorded_at, str):
+            dose_date = dose.recorded_at.split('T')[0]
+        else:
+            dose_date = dose.recorded_at.date().isoformat()
+        
+        if dose_date not in daily_summary:
+            daily_summary[dose_date] = {
+                "date": dose_date,
+                "total_dose": 0.0,
+                "count": 0,
+                "dose_types": {}
+            }
+        
+        daily_summary[dose_date]["total_dose"] += dose.dose_amount
+        daily_summary[dose_date]["count"] += 1
+        
+        dose_type = dose.dose_type
+        if dose_type not in daily_summary[dose_date]["dose_types"]:
+            daily_summary[dose_date]["dose_types"][dose_type] = 0.0
+        daily_summary[dose_date]["dose_types"][dose_type] += dose.dose_amount
+
+    # Convert to sorted list (oldest to newest)
+    result = sorted(daily_summary.values(), key=lambda x: x["date"])
+    
+    # Round totals
+    for item in result:
+        item["total_dose"] = round(item["total_dose"], 2)
+        for dose_type in item["dose_types"]:
+            item["dose_types"][dose_type] = round(item["dose_types"][dose_type], 2)
+
+    return result
+
+
 @router.get("/debug/all-doses")
 def get_all_insulin_doses_debug(
     current_user: Patient = Depends(get_current_user),

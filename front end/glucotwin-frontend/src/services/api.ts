@@ -200,6 +200,16 @@ export const insulinAPI = {
     return response.data;
   },
 
+  getPatientDailySummary: async (patientId: number, days: number = 7) => {
+    const response = await api.get<InsulinDailySummary[]>(
+      `/insulin/daily-summary/${patientId}`,
+      {
+        params: { days },
+      },
+    );
+    return response.data;
+  },
+
   getStats: async (days: number = 7) => {
     const response = await api.get<InsulinStats>("/insulin/stats/me", {
       params: { days },
