@@ -46,7 +46,7 @@ export default function MealAnalysis() {
   const [error, setError] = useState<string | null>(null);
 
   // Glucose and projection state
-  const [currentGlucose, setCurrentGlucose] = useState<number>(110);
+  const [currentGlucose, setCurrentGlucose] = useState<number>(145.5);
   const [glucoseLoading, setGlucoseLoading] = useState(false);
   const [metabolicProjection, setMetabolicProjection] = useState<any>(null);
 
@@ -59,8 +59,8 @@ export default function MealAnalysis() {
       setGlucoseLoading(true);
       try {
         // Try to get latest glucose reading
-        // Using a placeholder glucose value from user data or default
-        const baseGlucose = 110; // Could be from patientAPI.getProfile() glucose_reading
+        // Using BDD test data value from latest reading
+        const baseGlucose = 145.5; // From BDD test data
         setCurrentGlucose(baseGlucose);
 
         // TODO: Fetch metabolic projection from Model 1

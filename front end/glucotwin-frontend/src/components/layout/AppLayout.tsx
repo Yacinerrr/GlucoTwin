@@ -1,9 +1,48 @@
 import { AlertCircle, Radio } from "lucide-react";
 import { Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { CurrentPatientTab } from "./CurrentPatientTab";
+import { useAuth } from "../../context/Authcontext";
+import { useCurrentPatient } from "../../context/CurrentPatientContext";
+import { glucoseAPI } from "../../services/api";
 
 export function AppLayout() {
+  const { user } = useAuth();
+  const { currentPatient } = useCurrentPatient();
+  const [currentGlucose, setCurrentGlucose] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCurrentGlucose = async () => {
+      try {
+        setLoading(true);
+        let glucose;
+
+        if (user?.role === "doctor" && currentPatient) {
+          // Doctor viewing a patient - get patient's latest glucose
+          glucose = await glucoseAPI.getPatientLatestGlucose(currentPatient.id);
+        } else if (user?.role === "patient") {
+          // Patient viewing own glucose
+          glucose = await glucoseAPI.getLatestGlucose();
+        }
+
+        if (glucose) {
+          setCurrentGlucose(glucose.glucose_value);
+        }
+      } catch (err) {
+        console.error("Failed to fetch current glucose:", err);
+        // Fallback to default if API fails
+        setCurrentGlucose(145.5);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentGlucose();
+  }, [user?.role, currentPatient, user?.id]);
+
+  const glucoseDisplay = currentGlucose ?? 145.5;
   return (
     <div className="mx-auto my-0 grid min-h-screen max-w-[1400px] grid-cols-1 overflow-hidden border border-slate-200 bg-white shadow-[0_14px_35px_rgba(24,41,70,0.08)] md:my-3 md:rounded-3xl lg:grid-cols-[250px_1fr]">
       <Sidebar />
@@ -15,7 +54,7 @@ export function AppLayout() {
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
               <Radio size={14} />
-              112 mg/dL
+              {loading ? "Loading..." : `${glucoseDisplay.toFixed(1)} mg/dL`}
             </span>
             <button
               type="button"

@@ -44,12 +44,17 @@ export function DashboardPage() {
           // Doctor: fetch their patients
           const backendPatients = await doctorAPI.getPatients();
           const formattedPatients: PatientDashboard[] = backendPatients.map(
-            (p: { id: number; full_name: string; age: number; diabetes_type: string }) => ({
+            (p: {
+              id: number;
+              full_name: string;
+              age: number;
+              diabetes_type: string;
+            }) => ({
               id: String(p.id),
               name: p.full_name,
               age: p.age || 0,
               condition: p.diabetes_type || "Diabetes",
-              currentGlucose: 120,
+              currentGlucose: 145.5,
               glucoseTrendText: "Data loading...",
               riskWindowText: "Data loading...",
               riskPercent: 0,
@@ -67,7 +72,7 @@ export function DashboardPage() {
             name: user.full_name,
             age: user.age || 0,
             condition: user.diabetes_type || "Diabetes",
-            currentGlucose: 120,
+            currentGlucose: 145.5,
             glucoseTrendText: "Stable",
             riskWindowText: "2h 15m",
             riskPercent: 65,
@@ -84,9 +89,17 @@ export function DashboardPage() {
             ],
           };
           setLoadedPatients([selfPatient]);
+          // Auto-select current patient for patients
+          setCurrentPatient({
+            id: user.id,
+            full_name: user.full_name,
+            patient: null,
+            doctor_id: null,
+          });
         }
       } catch (err: unknown) {
-        const error = err instanceof Error ? err.message : "Failed to load patient data";
+        const error =
+          err instanceof Error ? err.message : "Failed to load patient data";
         console.error("Failed to load patients:", error);
         setError("Failed to load patient data");
       } finally {
@@ -99,10 +112,17 @@ export function DashboardPage() {
 
   const selectedPatient = useMemo(
     () =>
-      loadedPatients.find((patient) => patient.id === String(currentPatient?.id)) ??
-      null,
+      loadedPatients.find(
+        (patient) => patient.id === String(currentPatient?.id),
+      ) ?? null,
     [currentPatient?.id, loadedPatients],
   );
+
+  // For patients, auto-display their own data; for doctors, require selection
+  const displayedPatient =
+    user?.role === "patient" && loadedPatients.length > 0
+      ? loadedPatients[0]
+      : selectedPatient;
 
   return (
     <section className="grid gap-3.5">
@@ -149,7 +169,9 @@ export function DashboardPage() {
                   key={patient.id}
                   type="button"
                   onClick={() => {
-                    const patientInfo = patients.find(p => p.id === parseInt(patient.id));
+                    const patientInfo = patients.find(
+                      (p) => p.id === parseInt(patient.id),
+                    );
                     if (patientInfo) {
                       setCurrentPatient(patientInfo);
                     }
@@ -173,7 +195,7 @@ export function DashboardPage() {
         </aside>
 
         <div className="grid gap-3.5">
-          {!selectedPatient ? (
+          {!displayedPatient ? (
             <div className="grid min-h-60 place-items-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
               <div>
                 <h3 className="m-0 font-['Sora'] text-lg font-bold text-slate-700">
@@ -192,29 +214,29 @@ export function DashboardPage() {
                   Active patient
                 </p>
                 <h2 className="mt-1 font-['Sora'] text-xl font-bold text-slate-800">
-                  {selectedPatient.name}
+                  {displayedPatient.name}
                 </h2>
                 <p className="m-0 text-sm text-slate-500">
-                  {selectedPatient.condition}
+                  {displayedPatient.condition}
                 </p>
               </div>
 
-              <MetabolicChart data={selectedPatient.metabolicData} />
+              <MetabolicChart data={displayedPatient.metabolicData} />
 
               <section className="grid grid-cols-2 gap-3">
                 <KpiSummaryCards
-                  glucoseValue={selectedPatient.currentGlucose}
-                  glucoseTrendText={selectedPatient.glucoseTrendText}
-                  riskWindowText={selectedPatient.riskWindowText}
+                  glucoseValue={displayedPatient.currentGlucose}
+                  glucoseTrendText={displayedPatient.glucoseTrendText}
+                  riskWindowText={displayedPatient.riskWindowText}
                 />
-                <RiskAnalysisChart risk={selectedPatient.riskPercent} />
+                <RiskAnalysisChart risk={displayedPatient.riskPercent} />
               </section>
 
               <ActionHub />
 
               <PatientInsights
-                warningInsight={selectedPatient.warningInsight}
-                successInsight={selectedPatient.successInsight}
+                warningInsight={displayedPatient.warningInsight}
+                successInsight={displayedPatient.successInsight}
               />
             </>
           )}

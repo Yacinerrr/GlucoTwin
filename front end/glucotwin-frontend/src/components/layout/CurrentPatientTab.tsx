@@ -19,8 +19,7 @@ export function CurrentPatientTab() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-      >
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100">
         <User size={16} className="text-blue-600" />
         <span className="hidden text-xs sm:inline">Current Patient:</span>
         <span className="font-bold text-blue-700">
@@ -57,8 +56,7 @@ export function CurrentPatientTab() {
                     currentPatient?.id === patient.id
                       ? "bg-blue-50 text-blue-700 font-semibold"
                       : "text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
+                  }`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{patient.full_name}</p>

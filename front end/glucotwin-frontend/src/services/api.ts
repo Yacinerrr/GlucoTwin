@@ -116,6 +116,14 @@ export interface SacDosePredictionResponse {
   carbs_intake: number;
 }
 
+export interface GlucoseReading {
+  id: number;
+  patient_id: number;
+  glucose_value: number;
+  recorded_at: string;
+  created_at: string;
+}
+
 export const glucoseAPI = {
   predictSacDose: async (
     currentGlucose: number,
@@ -137,6 +145,18 @@ export const glucoseAPI = {
       },
     );
 
+    return response.data;
+  },
+
+  getLatestGlucose: async () => {
+    const response = await api.get<GlucoseReading>("/glucose/latest/me");
+    return response.data;
+  },
+
+  getPatientLatestGlucose: async (patientId: number) => {
+    const response = await api.get<GlucoseReading>(
+      `/glucose/latest/${patientId}`,
+    );
     return response.data;
   },
 };
