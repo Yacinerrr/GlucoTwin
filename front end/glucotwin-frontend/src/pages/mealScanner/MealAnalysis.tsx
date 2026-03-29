@@ -44,7 +44,7 @@ export default function MealAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Glucose and projection state
   const [currentGlucose, setCurrentGlucose] = useState<number>(110);
   const [glucoseLoading, setGlucoseLoading] = useState(false);
@@ -566,25 +566,34 @@ export default function MealAnalysis() {
                     </p>
                     <div className="space-y-3">
                       <div className="bg-white rounded-2xl p-3 border border-orange-200">
-                        <p className="text-xs text-slate-500 mb-1">Base Glucose</p>
+                        <p className="text-xs text-slate-500 mb-1">
+                          Base Glucose
+                        </p>
                         <p className="text-lg font-bold text-orange-600">
                           {currentGlucose} mg/dL
                         </p>
                       </div>
                       <div className="bg-white rounded-2xl p-3 border border-orange-200">
-                        <p className="text-xs text-slate-500 mb-1">Carb Impact</p>
+                        <p className="text-xs text-slate-500 mb-1">
+                          Carb Impact
+                        </p>
                         <p className="text-lg font-bold text-amber-600">
                           +{Math.round(carbs * 0.7)} mg/dL
                         </p>
                       </div>
                       <div className="bg-white rounded-2xl p-3 border border-orange-200">
-                        <p className="text-xs text-slate-500 mb-1">Projected Peak</p>
+                        <p className="text-xs text-slate-500 mb-1">
+                          Projected Peak
+                        </p>
                         <p className="text-lg font-bold text-red-600">
                           {currentGlucose + Math.round(carbs * 0.7)} mg/dL
                         </p>
                       </div>
                       <div className="text-xs text-slate-600 bg-white rounded-xl p-2 border border-orange-200">
-                        <FaCheckCircle className="inline mr-1 text-green-600" size={12} />
+                        <FaCheckCircle
+                          className="inline mr-1 text-green-600"
+                          size={12}
+                        />
                         Peak expected in ~30 minutes
                       </div>
                     </div>
