@@ -383,6 +383,7 @@ interface SacPrediction {
 function ProposedInsulinCard() {
   const [prediction, setPrediction] = useState<SacPrediction | null>(null);
   const [loading, setLoading] = useState(false);
+  const [injecting, setInjecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentGlucose, setCurrentGlucose] = useState(150);
   const [carbsIntake, setCarbsIntake] = useState(45);
@@ -407,6 +408,52 @@ function ProposedInsulinCard() {
   useEffect(() => {
     fetchPrediction();
   }, [fetchPrediction]);
+
+  const handleInjectDose = async () => {
+    if (!prediction) return;
+    try {
+      setInjecting(true);
+      setError(null);
+      const now = new Date();
+
+      console.log("Logging insulin dose:", {
+        dose_amount: prediction.recommended_dose,
+        dose_type: "bolus",
+        current_glucose: currentGlucose,
+        carbs_intake: carbsIntake,
+        is_recommended: true,
+        recorded_at: now.toISOString(),
+      });
+
+      const result = await insulinAPI.logDose({
+        dose_amount: prediction.recommended_dose,
+        dose_type: "bolus",
+        current_glucose: currentGlucose,
+        carbs_intake: carbsIntake,
+        is_recommended: true,
+        recorded_at: now.toISOString(),
+      });
+
+      console.log("Insulin dose logged successfully:", result);
+      setError(null);
+      alert(
+        `Insulin dose of ${prediction.recommended_dose.toFixed(1)} units injected successfully!`,
+      );
+      // Reset prediction after successful injection
+      setPrediction(null);
+    } catch (err: any) {
+      const errorMsg =
+        err.response?.data?.detail || err.message || "Failed to log insulin dose";
+      console.error("Error injecting insulin:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+      });
+      setError(`Failed: ${errorMsg}`);
+    } finally {
+      setInjecting(false);
+    }
+  };
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-3.5 md:col-span-2">
@@ -511,6 +558,14 @@ function ProposedInsulinCard() {
             className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-purple-700">
             <TrendingUp size={14} />
             Recalculate
+          </button>
+          <button
+            type="button"
+            onClick={handleInjectDose}
+            disabled={injecting || !prediction}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:bg-emerald-400">
+            <Syringe size={14} />
+            {injecting ? "Injecting..." : "Inject"}
           </button>
         </div>
       ) : null}
