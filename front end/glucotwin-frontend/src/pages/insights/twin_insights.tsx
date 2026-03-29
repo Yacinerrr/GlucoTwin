@@ -3,8 +3,11 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Sparkles,
+  Syringe,
+  TrendingUp,
+  Clock,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Bar,
   BarChart,
@@ -15,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { glucoseAPI, insulinAPI } from "../../services/api";
 
 type WeeklyScorePoint = {
   key: string;
@@ -367,6 +371,291 @@ function FooterLearningBanner() {
   );
 }
 
+interface SacPrediction {
+  recommended_dose: number;
+  raw_dose: number;
+  blocked: boolean;
+  current_glucose: number;
+  carbs_intake: number;
+}
+
+function ProposedInsulinCard() {
+  const [prediction, setPrediction] = useState<SacPrediction | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentGlucose, setCurrentGlucose] = useState(150);
+  const [carbsIntake, setCarbsIntake] = useState(45);
+
+  const fetchPrediction = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await glucoseAPI.predictSacDose(
+        currentGlucose,
+        carbsIntake,
+      );
+      setPrediction(result);
+    } catch (err) {
+      console.error("Error fetching insulin prediction:", err);
+      setError("Failed to fetch insulin prediction");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentGlucose, carbsIntake]);
+
+  useEffect(() => {
+    fetchPrediction();
+  }, [fetchPrediction]);
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-3.5 md:col-span-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-700">
+            <Syringe size={16} />
+          </div>
+          <div>
+            <h2 className="m-0 font-['Sora'] text-base font-bold text-slate-800">
+              Proposed Insulin Injection
+            </h2>
+            <p className="m-0 text-xs text-slate-500">
+              AI-recommended dose based on current glucose & meal
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2">
+          <AlertTriangle size={16} className="text-rose-600" />
+          <p className="text-xs text-rose-700">{error}</p>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="mt-4 flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="inline-flex h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-purple-600"></div>
+            <p className="mt-2 text-sm text-slate-600">Calculating dose...</p>
+          </div>
+        </div>
+      ) : prediction ? (
+        <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600">
+                Current Glucose
+              </label>
+              <input
+                type="number"
+                value={currentGlucose}
+                onChange={(e) => setCurrentGlucose(Number(e.target.value))}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600">
+                Carbs (g)
+              </label>
+              <input
+                type="number"
+                value={carbsIntake}
+                onChange={(e) => setCarbsIntake(Number(e.target.value))}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 p-3">
+            <p className="m-0 text-xs font-semibold text-slate-600">
+              RECOMMENDED DOSE
+            </p>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-4xl font-bold text-purple-600">
+                {prediction.recommended_dose.toFixed(1)}
+              </span>
+              <span className="text-lg font-semibold text-slate-500">
+                units
+              </span>
+            </div>
+
+            {prediction.blocked && (
+              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                <p className="text-xs font-semibold text-amber-800">
+                  ⚠️ Safety block: Low glucose detected. Insulin blocked to
+                  prevent hypoglycemia.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-slate-500">Glucose at</p>
+                <p className="font-semibold text-slate-700">
+                  {prediction.current_glucose} mg/dL
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Intake</p>
+                <p className="font-semibold text-slate-700">
+                  {prediction.carbs_intake} g carbs
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchPrediction}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-purple-700">
+            <TrendingUp size={14} />
+            Recalculate
+          </button>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+interface InsulinDoseRecord {
+  id: number;
+  patient_id: number;
+  dose_amount: number;
+  dose_type: string;
+  current_glucose: number | null;
+  carbs_intake: number | null;
+  is_recommended: boolean;
+  recorded_at: string;
+  created_at: string;
+  notes: string | null;
+}
+
+function InsulinHistoryCard() {
+  const [history, setHistory] = useState<
+    Array<{
+      date: string;
+      total_dose: number;
+      count: number;
+      dose_types: Record<string, number>;
+    }>
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await insulinAPI.getDailySummary(7);
+      setHistory(data);
+    } catch (err) {
+      console.error("Error fetching insulin history:", err);
+      setError("Failed to load insulin history");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + "T00:00:00");
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const getDayName = (dateString: string) => {
+    const date = new Date(dateString + "T00:00:00");
+    return date.toLocaleDateString("en-US", { weekday: "short" });
+  };
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-3.5">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h2 className="m-0 font-['Sora'] text-base font-bold text-slate-800">
+            Insulin History
+          </h2>
+          <p className="m-0 text-xs text-slate-500">Last 7 days</p>
+        </div>
+        <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+          7D
+        </span>
+      </div>
+
+      <div className="mt-3">
+        {loading ? (
+          <div className="flex items-center justify-center py-6">
+            <div className="text-center">
+              <div className="inline-flex h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-purple-600"></div>
+              <p className="mt-2 text-xs text-slate-600">Loading...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2">
+            <AlertTriangle size={14} className="text-rose-600" />
+            <p className="text-[10px] text-rose-700">{error}</p>
+          </div>
+        ) : history.length > 0 ? (
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {history.map((day) => (
+              <div
+                key={day.date}
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="min-w-12">
+                    <p className="text-xs font-semibold text-slate-700">
+                      {getDayName(day.date)}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {formatDate(day.date)}
+                    </p>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200"></div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">
+                      {day.total_dose.toFixed(1)} U
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {day.count} {day.count === 1 ? "dose" : "doses"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-[9px]">
+                  {Object.entries(day.dose_types).map(([type, amount]) => (
+                    <span
+                      key={type}
+                      className={`rounded px-1 py-0.5 font-semibold uppercase ${
+                        type === "bolus"
+                          ? "bg-blue-100 text-blue-700"
+                          : type === "correction"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-cyan-100 text-cyan-700"
+                      }`}>
+                      {(amount as number).toFixed(1)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+            <Syringe size={24} className="mx-auto text-slate-400" />
+            <p className="mt-2 text-xs text-slate-600">
+              No insulin doses logged yet
+            </p>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
 export function TwinInsightsPage() {
   const scoreCards = generateScoreCards();
 
@@ -386,6 +675,11 @@ export function TwinInsightsPage() {
           Gluco Live
         </span>
       </header>
+
+      <section className="grid grid-cols-1 gap-3 xl:grid-cols-[2fr_1fr]">
+        <ProposedInsulinCard />
+        <InsulinHistoryCard />
+      </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         {scoreCards.map((card) => (

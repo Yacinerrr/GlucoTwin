@@ -42,7 +42,7 @@ export function ProfilePage() {
         console.error("Error fetching profile:", err);
         const axiosError = err as AxiosError<{ detail: string }>;
         setError(
-          axiosError.response?.data?.detail || "Failed to load profile data"
+          axiosError.response?.data?.detail || "Failed to load profile data",
         );
       } finally {
         setIsLoading(false);

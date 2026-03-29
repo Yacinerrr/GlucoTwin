@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routes import auth, glucose,glucose_sac
-from app.models import user
+from app.routes import auth, glucose, glucose_sac, insulin
+from app.models import user, insulin_dose
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(glucose.router, prefix="/glucose", tags=["Glucose Prediction"])
 app.include_router(glucose_sac.router, prefix="/glucose", tags=["Glucose Prediction"])
+app.include_router(insulin.router, tags=["Insulin Management"])
 
 @app.get("/health")
 def health():

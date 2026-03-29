@@ -141,6 +141,83 @@ export const glucoseAPI = {
   },
 };
 
+export interface InsulinDose {
+  id: number;
+  patient_id: number;
+  dose_amount: number;
+  dose_type: string;
+  current_glucose?: number;
+  carbs_intake?: number;
+  notes?: string;
+  is_recommended: boolean;
+  recorded_at: string;
+  created_at: string;
+}
+
+export interface InsulinStats {
+  total_doses: number;
+  total_units: number;
+  average_dose: number;
+  dose_count_by_type: Record<string, number>;
+  recommended_doses_count: number;
+}
+
+export interface InsulinDailySummary {
+  date: string;
+  total_dose: number;
+  count: number;
+  dose_types: Record<string, number>;
+}
+
+export const insulinAPI = {
+  logDose: async (data: {
+    dose_amount: number;
+    dose_type: "bolus" | "correction" | "basal";
+    current_glucose?: number;
+    carbs_intake?: number;
+    notes?: string;
+    is_recommended?: boolean;
+    recorded_at: string;
+  }) => {
+    const response = await api.post<InsulinDose>("/insulin/log", data);
+    return response.data;
+  },
+
+  getHistory: async (days: number = 7) => {
+    const response = await api.get<InsulinDose[]>("/insulin/history/me", {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  getDailySummary: async (days: number = 7) => {
+    const response = await api.get<InsulinDailySummary[]>(
+      "/insulin/daily-summary/me",
+      {
+        params: { days },
+      },
+    );
+    return response.data;
+  },
+
+  getStats: async (days: number = 7) => {
+    const response = await api.get<InsulinStats>("/insulin/stats/me", {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  getPatientHistory: async (patientId: number, days: number = 7) => {
+    const response = await api.get<InsulinDose[]>(
+      `/insulin/history/${patientId}`,
+      {
+        params: { days },
+      },
+    );
+    return response.data;
+  },
+};
+
 // Types
 export interface DoctorRegisterData {
   email: string;

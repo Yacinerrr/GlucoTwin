@@ -290,7 +290,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
               <p className="text-xs text-emerald-600">✓ Copied to clipboard</p>
             )}
             <p className="text-xs text-slate-500">
-              Generated on: {new Date(doctor.created_at || "").toLocaleDateString()}
+              Generated on:{" "}
+              {new Date(doctor.created_at || "").toLocaleDateString()}
             </p>
           </div>
         </article>

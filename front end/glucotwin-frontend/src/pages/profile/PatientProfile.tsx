@@ -39,7 +39,7 @@ export default function PatientProfile({ patient }: PatientProfileProps) {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -321,7 +321,9 @@ export default function PatientProfile({ patient }: PatientProfileProps) {
             <div className="flex items-center gap-2">
               <User size={16} className="text-slate-500" />
               <span className="text-sm text-slate-700">
-                {patient.doctor_id ? "✓ Linked to doctor" : "Not linked to doctor"}
+                {patient.doctor_id
+                  ? "✓ Linked to doctor"
+                  : "Not linked to doctor"}
               </span>
             </div>
             {patient.is_ramadan_mode && (
@@ -340,9 +342,7 @@ export default function PatientProfile({ patient }: PatientProfileProps) {
           <h2 className="m-0 text-sm font-bold text-slate-800">Account</h2>
           <div className="mt-3 space-y-2">
             <div>
-              <p className="text-[10px] font-semibold text-slate-500">
-                ID
-              </p>
+              <p className="text-[10px] font-semibold text-slate-500">ID</p>
               <p className="text-sm text-slate-700 font-mono">#{patient.id}</p>
             </div>
             {patient.created_at && (

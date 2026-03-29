@@ -19,7 +19,7 @@ const navItems = [
 
 export function Sidebar() {
   const { user, logout } = useAuth();
-  
+
   const getInitials = (name?: string) => {
     if (!name) return "U";
     return name
