@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
-import  AuthScreen from "./pages/authentification/authentificationpage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import AuthScreen from "./pages/authentification/authentificationpage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
 //import { DoctorPage } from "./pages/doctor/DoctorPage";
 //import { FoodPage } from "./pages/food/FoodPage";
@@ -12,18 +13,46 @@ import MealAnalysis from "./pages/mealScanner/MealAnalysis";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/auth" replace />} />
+      <Route path="/auth" element={<AuthScreen />} />
       <Route element={<AppLayout />}>
-         <Route path="/auth" element={<AuthScreen />} /> 
-        <Route path="/dashboard" element={<DashboardPage />} />
-       < Route path="/food" element={<MealAnalysis />} />
-     {/*   <Route path="/insulin" element={<InsulinPage />} />
-        <Route path="/insights" element={<InsightsPage />} />
-        <Route path="/doctor" element={<DoctorPage />} /> */}
-        <Route path="/insights" element={<TwinInsightsPage />} />
-        <Route path="/ramadan" element={<RamadanPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/food"
+          element={
+            <ProtectedRoute>
+              <MealAnalysis />
+            </ProtectedRoute>
+          }
+        />
+        {/*   <Route path="/insulin" element={<ProtectedRoute><InsulinPage /></ProtectedRoute>} />
+        <Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
+        <Route path="/doctor" element={<ProtectedRoute><DoctorPage /></ProtectedRoute>} /> */}
+        <Route
+          path="/insights"
+          element={
+            <ProtectedRoute>
+              <TwinInsightsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ramadan"
+          element={
+            <ProtectedRoute>
+              <RamadanPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   );
 }

@@ -1,27 +1,21 @@
 // src/pages/MealAnalysis.tsx
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FaCamera,
   FaUpload,
   FaBell,
-  FaUserCircle,
   FaGlobe,
   FaPlus,
-  FaFileAlt,
-  FaMoon,
-  FaStethoscope,
-  FaCog,
-  FaQuestionCircle,
   FaLeaf,
- 
   FaSpinner,
   FaCheckCircle,
   FaExclamationTriangle,
 } from "react-icons/fa";
 import { FaEarthAmericas } from "react-icons/fa6";
-import { MdDashboard, MdRestaurantMenu } from "react-icons/md";
 import { BiSolidCoffee, BiSolidBed } from "react-icons/bi";
 import { GiCupcake } from "react-icons/gi";
+import { useAuth } from "../../context/Authcontext";
+import { glucoseAPI } from "../../services/api";
 
 // ========================
 // 🌐 FastAPI Configuration
@@ -43,14 +37,43 @@ interface PredictionResult {
 // Main Component
 // ========================
 export default function MealAnalysis() {
+  const { user } = useAuth();
   const [selectedFoodType, setSelectedFoodType] = useState<FoodType>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Glucose and projection state
+  const [currentGlucose, setCurrentGlucose] = useState<number>(110);
+  const [glucoseLoading, setGlucoseLoading] = useState(false);
+  const [metabolicProjection, setMetabolicProjection] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load current glucose and metabolic projection on component mount
+  useEffect(() => {
+    const loadGlucoseData = async () => {
+      if (!user) return;
+      setGlucoseLoading(true);
+      try {
+        // Try to get latest glucose reading
+        // Using a placeholder glucose value from user data or default
+        const baseGlucose = 110; // Could be from patientAPI.getProfile() glucose_reading
+        setCurrentGlucose(baseGlucose);
+
+        // TODO: Fetch metabolic projection from Model 1
+        // This would be called after a meal is logged to calculate glycemic impact
+      } catch (err) {
+        console.error("Failed to load glucose data:", err);
+      } finally {
+        setGlucoseLoading(false);
+      }
+    };
+
+    loadGlucoseData();
+  }, [user]);
 
   const carbs = prediction?.carbs ?? 65;
   const protein = prediction?.protein ?? 22;
@@ -130,7 +153,10 @@ export default function MealAnalysis() {
       const data: PredictionResult = await response.json();
       setPrediction(data);
     } catch (err: any) {
-      setError(err.message || "Erreur lors de l'analyse. Vérifiez votre serveur FastAPI.");
+      setError(
+        err.message ||
+          "Erreur lors de l'analyse. Vérifiez votre serveur FastAPI.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -146,50 +172,29 @@ export default function MealAnalysis() {
 
   return (
     <div className="flex h-screen bg-[#F4F7FB] font-sans text-slate-800 overflow-hidden">
-      {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-[260px] bg-white border-r border-slate-200">
-        <div className="p-6">
-          <h1 className="text-xl font-bold text-slate-800 mb-8">Clinical Sanctuary</h1>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-[#0052CC] text-white p-2 rounded-lg">
-              <FaUserCircle size={24} />
-            </div>
-            <div>
-              <p className="font-semibold text-sm text-[#0052CC]">Patient Portal</p>
-              <p className="text-xs text-slate-500">ID: 992834</p>
-            </div>
-          </div>
-          <button className="w-full bg-[#0052CC] hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors mb-6 text-sm">
-            + Quick Log
-          </button>
-        </div>
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-          <NavItem icon={<MdDashboard />} label="Dashboard" />
-          <NavItem icon={<MdRestaurantMenu />} label="Meal Analysis" active />
-          <NavItem icon={<FaMoon />} label="Ramadan Mode" />
-          <NavItem icon={<FaFileAlt />} label="My Reports" />
-          <NavItem icon={<FaStethoscope />} label="My Doctor" />
-          <NavItem icon={<FaCog />} label="Settings" />
-        </nav>
-        <div className="p-4 mt-auto">
-          <NavItem icon={<FaQuestionCircle />} label="Help Center" />
-        </div>
-      </aside>
-
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
         <header className="flex justify-between items-center bg-[#F4F7FB] px-8 py-4">
           <p className="text-sm font-medium text-slate-600">
             <span className="text-[#0052CC] border-b border-[#0052CC] pb-0.5 cursor-pointer">
-              Current Glucose: 110 mg/dL
+              {glucoseLoading ? (
+                <>
+                  <FaSpinner className="inline mr-2 animate-spin" size={14} />
+                  Loading glucose...
+                </>
+              ) : (
+                `Current Glucose: ${currentGlucose} mg/dL`
+              )}
             </span>
           </p>
           <div className="flex items-center gap-5 text-slate-500">
             <FaBell className="w-5 h-5 cursor-pointer hover:text-slate-700" />
             <div className="flex items-center gap-2 bg-slate-200/50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-slate-200">
               <FaGlobe className="w-4 h-4" />
-              <span className="text-xs font-medium text-slate-600">Language: EN/AR</span>
+              <span className="text-xs font-medium text-slate-600">
+                Language: EN/AR
+              </span>
             </div>
             <img
               src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix"
@@ -203,52 +208,71 @@ export default function MealAnalysis() {
         <main className="flex-1 overflow-y-auto p-8 pt-2">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">Meal Analysis</h2>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                Meal Analysis
+              </h2>
               <p className="text-slate-500 text-sm max-w-2xl leading-relaxed">
-                Capture or upload your meal photo for instant AI-powered nutritional breakdown and glycemic impact forecasting.
+                Capture or upload your meal photo for instant AI-powered
+                nutritional breakdown and glycemic impact forecasting.
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* Left Column */}
               <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-6">
-
                 {/* ======================== */}
                 {/* STEP 1: Food Type Select */}
                 {/* ======================== */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="bg-[#0052CC] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">1</span>
-                    <h3 className="text-lg font-bold text-slate-800">Type de plat</h3>
+                    <span className="bg-[#0052CC] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+                      1
+                    </span>
+                    <h3 className="text-lg font-bold text-slate-800">
+                      Type de plat
+                    </h3>
                   </div>
                   <p className="text-slate-500 text-sm mb-4">
-                    Sélectionnez le type de cuisine pour choisir le bon modèle IA.
+                    Sélectionnez le type de cuisine pour choisir le bon modèle
+                    IA.
                   </p>
 
                   <div className="grid grid-cols-2 gap-4">
                     {/* Algerian */}
                     <button
-                      onClick={() => { setSelectedFoodType("algerian"); setPrediction(null); setError(null); }}
+                      onClick={() => {
+                        setSelectedFoodType("algerian");
+                        setPrediction(null);
+                        setError(null);
+                      }}
                       className={`relative flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer
-                        ${selectedFoodType === "algerian"
-                          ? "border-[#0052CC] bg-blue-50 shadow-md"
-                          : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/40"
-                        }`}
-                    >
+                        ${
+                          selectedFoodType === "algerian"
+                            ? "border-[#0052CC] bg-blue-50 shadow-md"
+                            : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/40"
+                        }`}>
                       {selectedFoodType === "algerian" && (
-                        <FaCheckCircle className="absolute top-3 right-3 text-[#0052CC]" size={16} />
+                        <FaCheckCircle
+                          className="absolute top-3 right-3 text-[#0052CC]"
+                          size={16}
+                        />
                       )}
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl
                         ${selectedFoodType === "algerian" ? "bg-[#0052CC]" : "bg-slate-200"}`}>
                         <span>🇩🇿</span>
                       </div>
                       <div className="text-center">
-                        <p className={`font-bold text-sm ${selectedFoodType === "algerian" ? "text-[#0052CC]" : "text-slate-700"}`}>
+                        <p
+                          className={`font-bold text-sm ${selectedFoodType === "algerian" ? "text-[#0052CC]" : "text-slate-700"}`}>
                           Plat Algérien
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">Couscous, Chakhchouka...</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Couscous, Chakhchouka...
+                        </p>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold
                         ${selectedFoodType === "algerian" ? "bg-blue-100 text-[#0052CC]" : "bg-slate-100 text-slate-500"}`}>
                         food_model_algerian_v3
                       </span>
@@ -256,27 +280,39 @@ export default function MealAnalysis() {
 
                     {/* Global */}
                     <button
-                      onClick={() => { setSelectedFoodType("global"); setPrediction(null); setError(null); }}
+                      onClick={() => {
+                        setSelectedFoodType("global");
+                        setPrediction(null);
+                        setError(null);
+                      }}
                       className={`relative flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer
-                        ${selectedFoodType === "global"
-                          ? "border-emerald-500 bg-emerald-50 shadow-md"
-                          : "border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50/40"
-                        }`}
-                    >
+                        ${
+                          selectedFoodType === "global"
+                            ? "border-emerald-500 bg-emerald-50 shadow-md"
+                            : "border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50/40"
+                        }`}>
                       {selectedFoodType === "global" && (
-                        <FaCheckCircle className="absolute top-3 right-3 text-emerald-500" size={16} />
+                        <FaCheckCircle
+                          className="absolute top-3 right-3 text-emerald-500"
+                          size={16}
+                        />
                       )}
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl
                         ${selectedFoodType === "global" ? "bg-emerald-500" : "bg-slate-200"}`}>
                         <span>🌍</span>
                       </div>
                       <div className="text-center">
-                        <p className={`font-bold text-sm ${selectedFoodType === "global" ? "text-emerald-700" : "text-slate-700"}`}>
+                        <p
+                          className={`font-bold text-sm ${selectedFoodType === "global" ? "text-emerald-700" : "text-slate-700"}`}>
                           Plat Global
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">Pizza, Sushi, Burger...</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Pizza, Sushi, Burger...
+                        </p>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold
                         ${selectedFoodType === "global" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                         food_model_final
                       </span>
@@ -287,11 +323,16 @@ export default function MealAnalysis() {
                 {/* ======================== */}
                 {/* STEP 2: Image Upload     */}
                 {/* ======================== */}
-                <div className={`bg-white p-6 rounded-3xl shadow-sm border transition-all duration-200
+                <div
+                  className={`bg-white p-6 rounded-3xl shadow-sm border transition-all duration-200
                   ${!selectedFoodType ? "opacity-50 pointer-events-none border-slate-100" : "border-slate-100"}`}>
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="bg-[#0052CC] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">2</span>
-                    <h3 className="text-lg font-bold text-slate-800">Meal Capture</h3>
+                    <span className="bg-[#0052CC] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+                      2
+                    </span>
+                    <h3 className="text-lg font-bold text-slate-800">
+                      Meal Capture
+                    </h3>
                     <div className="ml-auto flex gap-4 text-[#0052CC]">
                       <FaCamera
                         className="w-5 h-5 cursor-pointer hover:opacity-80"
@@ -316,11 +357,11 @@ export default function MealAnalysis() {
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className={`relative h-64 rounded-2xl mb-6 flex items-center justify-center overflow-hidden border-2 border-dashed cursor-pointer transition-all
-                      ${imagePreview
-                        ? "border-transparent"
-                        : "border-slate-200 bg-gradient-to-b from-amber-50 to-amber-100 hover:border-blue-300"
-                      }`}
-                  >
+                      ${
+                        imagePreview
+                          ? "border-transparent"
+                          : "border-slate-200 bg-gradient-to-b from-amber-50 to-amber-100 hover:border-blue-300"
+                      }`}>
                     {imagePreview ? (
                       <>
                         <img
@@ -339,8 +380,12 @@ export default function MealAnalysis() {
                         <div className="bg-white/80 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
                           <FaUpload className="text-[#0052CC]" />
                         </div>
-                        <p className="text-slate-600 font-semibold text-sm">Cliquer pour uploader</p>
-                        <p className="text-slate-400 text-xs mt-1">JPG, PNG, WEBP</p>
+                        <p className="text-slate-600 font-semibold text-sm">
+                          Cliquer pour uploader
+                        </p>
+                        <p className="text-slate-400 text-xs mt-1">
+                          JPG, PNG, WEBP
+                        </p>
                       </div>
                     )}
                   </div>
@@ -358,20 +403,18 @@ export default function MealAnalysis() {
                     onClick={handleAnalyze}
                     disabled={!imageFile || !selectedFoodType || isLoading}
                     className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2
-                      ${imageFile && selectedFoodType && !isLoading
-                        ? "bg-[#0052CC] hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      }`}
-                  >
+                      ${
+                        imageFile && selectedFoodType && !isLoading
+                          ? "bg-[#0052CC] hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
+                          : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      }`}>
                     {isLoading ? (
                       <>
                         <FaSpinner className="animate-spin" />
                         Analyse en cours...
                       </>
                     ) : (
-                      <>
-                        🔍 Analyser le plat
-                      </>
+                      <>🔍 Analyser le plat</>
                     )}
                   </button>
 
@@ -384,18 +427,25 @@ export default function MealAnalysis() {
                       <div className="space-y-2">
                         {prediction.top5.map((item, i) => (
                           <div key={i} className="flex items-center gap-3">
-                            <span className="text-xs text-slate-400 w-4">{i + 1}.</span>
+                            <span className="text-xs text-slate-400 w-4">
+                              {i + 1}.
+                            </span>
                             <div className="flex-1">
                               <div className="flex justify-between text-xs mb-1">
-                                <span className={`font-medium ${i === 0 ? "text-[#0052CC]" : "text-slate-600"}`}>
+                                <span
+                                  className={`font-medium ${i === 0 ? "text-[#0052CC]" : "text-slate-600"}`}>
                                   {item.label}
                                 </span>
-                                <span className="text-slate-500">{(item.probability * 100).toFixed(1)}%</span>
+                                <span className="text-slate-500">
+                                  {(item.probability * 100).toFixed(1)}%
+                                </span>
                               </div>
                               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div
                                   className={`h-full rounded-full ${i === 0 ? "bg-[#0052CC]" : "bg-slate-300"}`}
-                                  style={{ width: `${item.probability * 100}%` }}
+                                  style={{
+                                    width: `${item.probability * 100}%`,
+                                  }}
                                 />
                               </div>
                             </div>
@@ -413,16 +463,28 @@ export default function MealAnalysis() {
                       </h3>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <p className="text-xs text-slate-500 font-medium mb-1">Carbs (g)</p>
-                          <p className="font-bold text-xl text-slate-800">{carbs}</p>
+                          <p className="text-xs text-slate-500 font-medium mb-1">
+                            Carbs (g)
+                          </p>
+                          <p className="font-bold text-xl text-slate-800">
+                            {carbs}
+                          </p>
                         </div>
                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <p className="text-xs text-slate-500 font-medium mb-1">Protein (g)</p>
-                          <p className="font-bold text-xl text-slate-800">{protein}</p>
+                          <p className="text-xs text-slate-500 font-medium mb-1">
+                            Protein (g)
+                          </p>
+                          <p className="font-bold text-xl text-slate-800">
+                            {protein}
+                          </p>
                         </div>
                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <p className="text-xs text-slate-500 font-medium mb-1">Fat (g)</p>
-                          <p className="font-bold text-xl text-slate-800">{fat}</p>
+                          <p className="text-xs text-slate-500 font-medium mb-1">
+                            Fat (g)
+                          </p>
+                          <p className="font-bold text-xl text-slate-800">
+                            {fat}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -432,7 +494,6 @@ export default function MealAnalysis() {
 
               {/* Right Column */}
               <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
-
                 {/* AI Meal Recognition */}
                 <div className="bg-[#0052CC] text-white p-7 rounded-3xl shadow-md relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
@@ -442,19 +503,28 @@ export default function MealAnalysis() {
 
                   {isLoading ? (
                     <div className="flex items-center gap-3 py-4">
-                      <FaSpinner className="animate-spin text-cyan-300" size={24} />
-                      <p className="text-white/80 text-sm">Analyse en cours...</p>
+                      <FaSpinner
+                        className="animate-spin text-cyan-300"
+                        size={24}
+                      />
+                      <p className="text-white/80 text-sm">
+                        Analyse en cours...
+                      </p>
                     </div>
                   ) : prediction ? (
                     <>
-                      <h2 className="text-2xl font-bold mb-1">{prediction.food_name}</h2>
+                      <h2 className="text-2xl font-bold mb-1">
+                        {prediction.food_name}
+                      </h2>
                       <div className="flex items-baseline gap-1 mb-2">
                         <span className="text-4xl font-extrabold">{carbs}</span>
                         <span className="text-lg opacity-90">g Carbs</span>
                       </div>
                       <p className="text-xs text-cyan-200 mb-4">
                         Confiance: {(prediction.confidence * 100).toFixed(1)}%
-                        {selectedFoodType === "algerian" ? " • Modèle Algérien 🇩🇿" : " • Modèle Global 🌍"}
+                        {selectedFoodType === "algerian"
+                          ? " • Modèle Algérien 🇩🇿"
+                          : " • Modèle Global 🌍"}
                       </p>
                     </>
                   ) : (
@@ -466,7 +536,9 @@ export default function MealAnalysis() {
                             : "Plat Global 🌍"
                           : "En attente..."}
                       </h2>
-                      <p className="text-white/60 text-sm mb-4">Uploadez une image pour commencer l'analyse</p>
+                      <p className="text-white/60 text-sm mb-4">
+                        Uploadez une image pour commencer l'analyse
+                      </p>
                     </>
                   )}
 
@@ -477,18 +549,62 @@ export default function MealAnalysis() {
                     />
                   </div>
                   <p className="text-xs opacity-80 font-medium">
-                    Daily carb allowance: {Math.round((carbs / 150) * 100)}% utilized
+                    Daily carb allowance: {Math.round((carbs / 150) * 100)}%
+                    utilized
                   </p>
                 </div>
+
+                {/* Metabolic Projection from Model 1 */}
+                {prediction && (
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-3xl shadow-sm border border-orange-100">
+                    <h3 className="font-bold text-slate-800 text-base mb-2 flex items-center gap-2">
+                      <span className="text-orange-600">📊</span>
+                      Metabolic Projection
+                    </h3>
+                    <p className="text-slate-500 text-xs mb-4">
+                      Predicted glucose impact of this meal (Model 1)
+                    </p>
+                    <div className="space-y-3">
+                      <div className="bg-white rounded-2xl p-3 border border-orange-200">
+                        <p className="text-xs text-slate-500 mb-1">Base Glucose</p>
+                        <p className="text-lg font-bold text-orange-600">
+                          {currentGlucose} mg/dL
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-2xl p-3 border border-orange-200">
+                        <p className="text-xs text-slate-500 mb-1">Carb Impact</p>
+                        <p className="text-lg font-bold text-amber-600">
+                          +{Math.round(carbs * 0.7)} mg/dL
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-2xl p-3 border border-orange-200">
+                        <p className="text-xs text-slate-500 mb-1">Projected Peak</p>
+                        <p className="text-lg font-bold text-red-600">
+                          {currentGlucose + Math.round(carbs * 0.7)} mg/dL
+                        </p>
+                      </div>
+                      <div className="text-xs text-slate-600 bg-white rounded-xl p-2 border border-orange-200">
+                        <FaCheckCircle className="inline mr-1 text-green-600" size={12} />
+                        Peak expected in ~30 minutes
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Meal Safety Score */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-slate-800 text-base mb-1">Meal Safety Score</h3>
-                    <p className="text-slate-500 text-xs">Predicted Glycemic Impact</p>
+                    <h3 className="font-bold text-slate-800 text-base mb-1">
+                      Meal Safety Score
+                    </h3>
+                    <p className="text-slate-500 text-xs">
+                      Predicted Glycemic Impact
+                    </p>
                   </div>
                   <div className="relative w-16 h-16 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <svg
+                      className="w-full h-full transform -rotate-90"
+                      viewBox="0 0 36 36">
                       <path
                         className="text-slate-100"
                         strokeWidth="4"
@@ -506,7 +622,9 @@ export default function MealAnalysis() {
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       />
                     </svg>
-                    <span className="absolute text-xl font-bold text-teal-700">B</span>
+                    <span className="absolute text-xl font-bold text-teal-700">
+                      B
+                    </span>
                   </div>
                 </div>
 
@@ -514,28 +632,39 @@ export default function MealAnalysis() {
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex-1">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="font-bold text-slate-800">Recent Logs</h3>
-                    <button className="text-[#0052CC] text-xs font-bold hover:underline">View All</button>
+                    <button className="text-[#0052CC] text-xs font-bold hover:underline">
+                      View All
+                    </button>
                   </div>
                   <div className="space-y-4">
                     {recentLogs.map((log, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-slate-100"
-                      >
+                        className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
                         <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bg}`}>
+                          <div
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${log.bg}`}>
                             {log.icon}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-slate-800">{log.name}</p>
-                            <p className="text-xs text-slate-400 font-medium mt-0.5">{log.time}</p>
+                            <p className="text-sm font-bold text-slate-800">
+                              {log.name}
+                            </p>
+                            <p className="text-xs text-slate-400 font-medium mt-0.5">
+                              {log.time}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-slate-800 text-sm mb-1">{log.amount}</p>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            log.score === "A" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                          }`}>
+                          <p className="font-bold text-slate-800 text-sm mb-1">
+                            {log.amount}
+                          </p>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              log.score === "A"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}>
                             Score {log.score}
                           </span>
                         </div>
@@ -551,24 +680,10 @@ export default function MealAnalysis() {
         <button
           onClick={resetAnalysis}
           className="fixed bottom-8 right-8 bg-[#0052CC] hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center transform hover:scale-105"
-          title="Nouvelle analyse"
-        >
+          title="Nouvelle analyse">
           <FaPlus className="w-5 h-5" />
         </button>
       </div>
-    </div>
-  );
-}
-
-function NavItem({ icon, label, active = false }: { icon: React.ReactNode; label: string; active?: boolean }) {
-  return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors mb-1 ${
-      active
-        ? "bg-blue-50 text-[#0052CC] font-bold"
-        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium"
-    }`}>
-      <div className={`text-lg ${active ? "text-[#0052CC]" : "text-slate-400"}`}>{icon}</div>
-      <span className="text-sm">{label}</span>
     </div>
   );
 }

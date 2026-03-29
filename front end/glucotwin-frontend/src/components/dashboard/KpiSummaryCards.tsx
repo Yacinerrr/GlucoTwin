@@ -17,7 +17,7 @@ function KpiCard({
 }) {
   return (
     <article
-      className="rounded-2xl border border-slate-200 bg-white p-3.5"
+      className="rounded-2xl border border-slate-200 bg-white p-3.5 h-full flex flex-col justify-center"
       style={{ borderTop: `4px solid ${accent}` }}>
       <p className="m-0 text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400">
         {title}
@@ -43,12 +43,12 @@ export function KpiSummaryCards({
         hint={glucoseTrendText}
         accent="#18a36b"
       />
-      <KpiCard
+      {/* <KpiCard
         title="Window of Risk"
         value={riskWindowText}
         hint="Active risk interval"
         accent="#2f7fd6"
-      />
+      /> */}
     </>
   );
 }
