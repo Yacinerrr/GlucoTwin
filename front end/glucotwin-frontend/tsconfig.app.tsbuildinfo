@@ -1,17 +1,1 @@
-{
-  "root": [
-    "./src/app.tsx",
-    "./src/main.tsx",
-    "./src/components/charts/metabolicchart.tsx",
-    "./src/components/charts/riskanalysischart.tsx",
-    "./src/components/dashboard/actionhub.tsx",
-    "./src/components/dashboard/kpisummarycards.tsx",
-    "./src/components/dashboard/patientinsights.tsx",
-    "./src/components/layout/applayout.tsx",
-    "./src/components/layout/sidebar.tsx",
-    "./src/pages/dashboard/dashboardpage.tsx",
-    "./src/pages/insights/twin_insights.tsx",
-    "./src/types/index.ts"
-  ],
-  "version": "5.9.3"
-}
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/protectedroute.tsx","./src/components/charts/metabolicchart.tsx","./src/components/charts/riskanalysischart.tsx","./src/components/dashboard/actionhub.tsx","./src/components/dashboard/kpisummarycards.tsx","./src/components/dashboard/patientinsights.tsx","./src/components/layout/applayout.tsx","./src/components/layout/currentpatienttab.tsx","./src/components/layout/patientdatacontextbanner.tsx","./src/components/layout/sidebar.tsx","./src/context/authcontext.tsx","./src/context/currentpatientcontext.tsx","./src/pages/authentification/authentificationpage.tsx","./src/pages/dashboard/dashboardpage.tsx","./src/pages/insights/twin_insights.tsx","./src/pages/mealscanner/mealanalysis.tsx","./src/pages/profile/doctorprofile.tsx","./src/pages/profile/patientprofile.tsx","./src/pages/profile/profilepage.tsx","./src/pages/ramadan/ramadanpage.tsx","./src/pages/ramadan/components/fastprogresscard.tsx","./src/pages/ramadan/components/hydrationcard.tsx","./src/pages/ramadan/components/metabolicshiftcard.tsx","./src/pages/ramadan/components/recommendationcard.tsx","./src/pages/ramadan/components/safetyprotocolcard.tsx","./src/services/api.ts","./src/types/index.ts"],"errors":true,"version":"5.9.3"}
